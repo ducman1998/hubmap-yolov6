@@ -282,7 +282,7 @@ class Evaler:
                     label_count_dicts[nc_i]["images"].add(ann_i["image_id"])
                     label_count_dicts[nc_i]["anns"] += 1
 
-                s = ('%-16s' + '%12s' * 7) % ('Class', 'Labeled_images', 'Labels', 'P@.5iou', 'R@.5iou', 'F1@.5iou', 'mAP@.5', 'mAP@.5:.95')
+                s = ('%-16s' + '%12s' * 8) % ('Class', 'Labeled_images', 'Labels', 'P@.5iou', 'R@.5iou', 'F1@.5iou', 'mAP@.5', 'mAP@.6', 'mAP@.5:.95')
                 LOGGER.info(s)
                 #IOU , all p, all cats, all gt, maxdet 100
                 coco_p = cocoEval.eval['precision']
@@ -290,14 +290,16 @@ class Evaler:
                 map = np.mean(coco_p_all[coco_p_all>-1])
 
                 coco_p_iou50 = coco_p[0, :, :, 0, 2]
+                coco_p_iou60 = coco_p[2, :, :, 0, 2]
                 map50 = np.mean(coco_p_iou50[coco_p_iou50>-1])
+                map60 = np.mean(coco_p_iou60[coco_p_iou60>-1])
                 mp = np.array([np.mean(coco_p_iou50[ii][coco_p_iou50[ii]>-1]) for ii in range(coco_p_iou50.shape[0])])
                 mr = np.linspace(.0, 1.00, int(np.round((1.00 - .0) / .01)) + 1, endpoint=True)
                 mf1 = 2 * mp * mr / (mp + mr + 1e-16)
                 i = mf1.argmax()  # max F1 index
 
-                pf = '%-16s' + '%12i' * 2 + '%12.3g' * 5  # print format
-                LOGGER.info(pf % ('all', val_dataset_img_count, val_dataset_anns_count, mp[i], mr[i], mf1[i], map50, map))
+                pf = '%-16s' + '%12i' * 2 + '%12.3g' * 6  # print format
+                LOGGER.info(pf % ('all', val_dataset_img_count, val_dataset_anns_count, mp[i], mr[i], mf1[i], map50, map60, map))
 
                 #compute each class best f1 and corresponding p and r
                 for nc_i in range(model.nc):
@@ -305,12 +307,14 @@ class Evaler:
                     map = np.mean(coco_p_c[coco_p_c>-1])
 
                     coco_p_c_iou50 = coco_p[0, :, nc_i, 0, 2]
+                    coco_p_c_iou60 = coco_p[2, :, nc_i, 0, 2]
                     map50 = np.mean(coco_p_c_iou50[coco_p_c_iou50>-1])
+                    map60 = np.mean(coco_p_c_iou60[coco_p_c_iou60>-1])
                     p = coco_p_c_iou50
                     r = np.linspace(.0, 1.00, int(np.round((1.00 - .0) / .01)) + 1, endpoint=True)
                     f1 = 2 * p * r / (p + r + 1e-16)
                     i = f1.argmax()
-                    LOGGER.info(pf % (model.names[nc_i], len(label_count_dicts[nc_i]["images"]), label_count_dicts[nc_i]["anns"], p[i], r[i], f1[i], map50, map))
+                    LOGGER.info(pf % (model.names[nc_i], len(label_count_dicts[nc_i]["images"]), label_count_dicts[nc_i]["anns"], p[i], r[i], f1[i], map50, map60, map))
             cocoEval.summarize()
             map, map50 = cocoEval.stats[:2]  # update results (mAP@0.5:0.95, mAP@0.5)
             # Return results
